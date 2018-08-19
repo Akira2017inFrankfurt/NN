@@ -23,24 +23,23 @@ class Activation:
     @staticmethod
     def sigmoid(netOutput):
         # use e^x from numpy to avoid overflow
-        return 1 / (1 + exp(-1.0 * netOutput))
+        return 1 / (1 + np.exp(-1.0 * netOutput))
 
     @staticmethod
     def sigmoidPrime(netOutput):
         # Here you have to code the derivative of sigmoid function
-        # netOutput.*(1-netOutput)
-        return netOutput * (1.0 - netOutput)
+        # s*(1-s)
+        return Activation.sigmoid(netOutput) * (1.0 - Activation.sigmoid(netOutput))
 
     @staticmethod
     def tanh(netOutput):
         # return 2*Activation.sigmoid(2*netOutput)-1
-        ex = exp(1.0 * netOutput)
-        exn = exp(-1.0 * netOutput)
+        ex = np.exp(1.0 * netOutput)
+        exn = np.exp(-1.0 * netOutput)
         return divide(ex - exn, ex + exn)  # element-wise division
 
     @staticmethod
     def tanhPrime(netOutput):
-        # Here you have to code the derivative of tanh function
         return (1 - Activation.tanh(netOutput) ** 2)
 
     @staticmethod
@@ -64,20 +63,30 @@ class Activation:
 
     @staticmethod
     def softmax(netOutput):
-        # 以数组中的每个值作为指数的自然指数的值
-        exps = np.exp(netOutput)
-        # 返回的是一个列表，是已经处理好的列表
-        return exps / np.sum(exps)
-        pass
+        # # 以数组中的每个值作为指数的自然指数的值
+        # exps = np.exp(netOutput)
+        # # 返回的是一个列表，是已经处理好的列表
+        # return exps / np.sum(exps)
+        # 上面的这种写法 容易因为指数过大出现nan的错误
+        """Compute the softmax in a numerically stable way."""
+        # 利用这个性质 softmax(x) = softmax(x+c)
+        x = netOutput - np.max(netOutput)
+        exp_x = np.exp(x)
+        softmax_x = exp_x / np.sum(exp_x)
+        return softmax_x
 
     @staticmethod
     def softmaxPrime(netOutput):
-        index_max_vaule = netOutput.index(max(netOutput))
-        for i in range(len(netOutput)):
-            if i == index_max_vaule:
-                return Activation.softmax(netOutput) - 1
+        netOutput_list = netOutput.tolist()
+        i = netOutput_list.index(np.max(netOutput))
+        a_i = Activation.softmax(netOutput_list[i])
+        for j in range(len(netOutput_list)):
+            a_j = Activation.softmax(netOutput_list[j])
+            if j == i:
+                netOutput_list[j] = a_j*(1-a_j)
             else:
-                return Activation.softmax(netOutput)
+                netOutput_list[j] = -a_j*a_i
+        return np.array(netOutput_listndmin=2).T
 
     @staticmethod
     def getActivation(str):
