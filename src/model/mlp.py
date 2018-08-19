@@ -1,13 +1,11 @@
-import sys
-import numpy as np
+import os
 from src.data.mnist_seven import MNISTSeven
 from src.util.loss_functions import *
 from src.model.logistic_layer import LogisticLayer
 from src.model.classifier import Classifier
-
 from sklearn.metrics import accuracy_score
-from src.util.activation_functions import Activation
 from src.report.evaluator import Evaluator
+from src.report.performance_plot import PerformancePlot
 
 
 class MultilayerPerceptron(Classifier):
@@ -28,6 +26,7 @@ class MultilayerPerceptron(Classifier):
         test : list
         learningRate : float
         epochs : positive int
+
         Attributes
         ----------
         trainingSet : list
@@ -68,21 +67,21 @@ class MultilayerPerceptron(Classifier):
         inputActivation = "sigmoid"
         self.layers.append(LogisticLayer(train.input.shape[1], 128, None, inputActivation, False))
         # Output layer
-        outputActivation = "sigmoid"
+        outputActivation = "softmax"
         self.layers.append(LogisticLayer(128, 10, 1, outputActivation, True))
 
         self.inputWeights = inputWeights
 
-        self.trainingSet.input = np.insert(self.trainingSet.input, 0, 1, axis=1)
+        self.trainingSet.input = np.insert(self.trainingSet.input, 0, 1, axis=1)  
         self.validationSet.input = np.insert(self.validationSet.input, 0, 1, axis=1)
         self.testSet.input = np.insert(self.testSet.input, 0, 1, axis=1)
 
     def train(self, verbose=True):
-        """Train the Logistic Regression.  训练逻辑斯蒂回归
+        """Train the Logistic Regression
 
-        Parameters 没有传入的参数
+        Parameters
         ----------
-        verbose : boolean 打印训练过程中的信息
+        verbose : boolean
             Print logging messages with validation accuracy if verbose is True.
         """
 
@@ -101,11 +100,17 @@ class MultilayerPerceptron(Classifier):
     def _train_one_epoch(self):
         """
         Train one epoch, seeing all input instances
+
+        Consisting of 3 function:
+        1. _forward
+        2. calculate_error
+        3. updating weights values function
+
         """
 
-        for img, label in zip(self.trainingSet.input,
-                              self.trainingSet.label):
+        for img, label in zip(self.trainingSet.input, self.trainingSet.label):
 
+            # _forward function
             # output of input layer shape is (128,)
             hidden_outputs = self.layers[0].forward(img)
             hidden_array = np.array(hidden_outputs, ndmin=2).T
@@ -118,38 +123,26 @@ class MultilayerPerceptron(Classifier):
             targets_list[label] = 0.99
             targets = np.array(targets_list, ndmin=2).T
 
-            # get the error
-            # output_errors = targets - final_outputs
+            # calculate_error function
             output_errors_list = []
             for index in range(10):
                 output_errors_list.append(targets[index] - final_outputs[index])
-            # shape（10，1）
             output_errors = np.array(output_errors_list, ndmin=2)
-            # shape（128，1)
             hidden_errors = np.dot(self.layers[1].weights, output_errors)
 
-            # t1（1, 10）
-            temp_1 = (output_errors * final_array * (1 - final_array)).T
-            # t0（1, 128）
+            # update the weights vector with the help of partial derivative of sigmoid function
+            temp_1 = (output_errors * final_array * (1.0 - final_array)).T
             temp_0 = (hidden_errors * hidden_array * (1.0 - hidden_array)).T
-
-            # a (1, 128).T = (128,1)
             a = np.array(np.transpose(hidden_outputs), ndmin=2).T
-            # b (1, 785).T = (785,1)
             b = np.array(np.transpose(img), ndmin=2).T
-
-            # update the weights vector
-            # w1 = [128, 10] = (128,1) * (1,10)
             self.layers[1].weights += self.learningRate * np.dot(a, temp_1)
-            # w2 = [785, 128] = (785,1) * (1,128)
             self.layers[0].weights += self.learningRate * np.dot(b, temp_0)
 
     def classify(self, test_instance):
         outp = list(self.layers[1].forward(self.layers[0].forward(test_instance)))
         max_value = max(outp)
         index_class = outp.index(max_value)
-        return index_class != test_instance[1]
-        pass
+        return index_class
 
     def evaluate(self, test=None):
         if test is None:
@@ -163,10 +156,17 @@ class MultilayerPerceptron(Classifier):
         self.testSet.input = np.delete(self.testSet.input, 0, axis=1)
 
 
-data = MNISTSeven("../data/mnist_seven.csv", 3000, 1000, 1000, oneHot=True)
+file_path = os.path.dirname(__file__)
+absolute_path = file_path[:-9] + 'data/mnist_seven.csv'
+
+data = MNISTSeven(absolute_path, 3000, 1000, 1000, oneHot=True)
 mlp = MultilayerPerceptron(data.trainingSet, data.validationSet, data.testSet, learningRate=0.005, epochs=50)
+
 mlp.train()
 mlpPred = mlp.evaluate()
 evaluator = Evaluator()
 evaluator.printAccuracy(data.testSet, mlpPred)
-print(mlp.evaluate())
+
+# Draw
+plot = PerformancePlot("Logistic Regression validation")
+plot.draw_performance_epoch(mlp.performances, mlp.epochs)
