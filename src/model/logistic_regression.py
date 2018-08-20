@@ -196,8 +196,10 @@ class LogisticRegression(Classifier):
                                              axis=1)
         self.testSet.input = np.delete(self.testSet.input, 0, axis=1)
 
+file_path = os.path.dirname(__file__)
+absolute_path = file_path[:-9] + 'data/mnist_seven.csv'
 
-data = MNISTSeven("/Users/Haruki/PycharmProjects/NNPraktikum//data/mnist_seven.csv", 3000, 1000, 1000, oneHot=True)
+data = MNISTSeven(absolute_path, 3000, 1000, 1000, oneHot=True)
 myLRClassifier = LogisticRegression(data.trainingSet,
                                     data.validationSet,
                                     data.testSet,
