@@ -66,5 +66,5 @@ class MNISTSeven(object):
         print("Data loaded.")
 
 
-data_test = MNISTSeven("/Users/Haruki/PycharmProjects/NNPraktikum/data/mnist_seven.csv")
+# data_test = MNISTSeven("/Users/Haruki/PycharmProjects/NNPraktikum/data/mnist_seven.csv")
 # print(data_test.trainingSet.shapes)
